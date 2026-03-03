@@ -1,3 +1,21 @@
+![CI](https://github.com/MatALass-ISM/ects-grade-engine/actions/workflows/ci.yml/badge.svg)
+
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)
+
+![MySQL](https://img.shields.io/badge/MySQL-8-orange)
+
+![SQLFluff](https://img.shields.io/badge/Linted_with-sqlfluff-purple)
+
+![License](https://img.shields.io/github/license/MatALass-ISM/ects-grade-engine)
+
+![Last Commit](https://img.shields.io/github/last-commit/MatALass-ISM/ects-grade-engine)
+
+![Repo Size](https://img.shields.io/github/repo-size/MatALass-ISM/ects-grade-engine)
+
+![Issues](https://img.shields.io/github/issues/MatALass-ISM/ects-grade-engine)
+
+![Stars](https://img.shields.io/github/stars/MatALass-ISM/ects-grade-engine?style=social)
+
 # ects-grade-engine
 
 > Production-ready SQL model to assign ECTS grades (A--E) based on GPA

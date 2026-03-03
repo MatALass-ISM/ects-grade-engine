@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  sql_lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Minimal "lint" check: ensure SQL files exist and are non-empty.
+      # (You can upgrade later to sqlfluff/dbt.)
+      - name: Validate SQL files are present and non-empty
+        run: |
+          set -e
+          count=$(find sql -type f -name "*.sql" | wc -l)
+          echo "SQL file count: $count"
+          if [ "$count" -lt 1 ]; then
+            echo "No SQL files found."
+            exit 1
+          fi
+          # Fail if any SQL file is empty
+          while IFS= read -r f; do
+            if [ ! -s "$f" ]; then
+              echo "Empty SQL file: $f"
+              exit 1
+            fi
+          done < <(find sql -type f -name "*.sql")
+          echo "All SQL files are non-empty."
+
+  docs_check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate docs exist
+        run: |
+          set -e
+          test -f docs/assumptions.md
+          test -f docs/data_dictionary.md
+          test -f docs/methodology.md
+          test -f docs/performance_considerations.md
+          echo "Docs OK."

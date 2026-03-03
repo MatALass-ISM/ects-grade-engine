@@ -1,45 +1,126 @@
-name: ci
+name: ECTS Grade Engine CI
 
 on:
   push:
-    branches: ["main"]
+    branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
-  sql_lint:
+
+  sql-lint:
+    name: SQL Lint (sqlfluff)
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install sqlfluff
+        run: |
+          pip install sqlfluff
+          sqlfluff --version
+
+      - name: Lint SQL files
+        run: |
+          sqlfluff lint sql --dialect postgres
+
+  test-postgres:
+    name: Integration Test (PostgreSQL)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: ects_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - uses: actions/checkout@v4
 
-      # Minimal "lint" check: ensure SQL files exist and are non-empty.
-      # (You can upgrade later to sqlfluff/dbt.)
-      - name: Validate SQL files are present and non-empty
-        run: |
-          set -e
-          count=$(find sql -type f -name "*.sql" | wc -l)
-          echo "SQL file count: $count"
-          if [ "$count" -lt 1 ]; then
-            echo "No SQL files found."
-            exit 1
-          fi
-          # Fail if any SQL file is empty
-          while IFS= read -r f; do
-            if [ ! -s "$f" ]; then
-              echo "Empty SQL file: $f"
-              exit 1
-            fi
-          done < <(find sql -type f -name "*.sql")
-          echo "All SQL files are non-empty."
+      - name: Install psql
+        run: sudo apt-get install postgresql-client
 
-  docs_check:
+      - name: Load demo data
+        run: |
+          psql -h localhost -U test -d ects_test -c "
+          CREATE TABLE students(id INT, degree TEXT);
+          CREATE TABLE grades(student_id INT, grade NUMERIC);
+
+          INSERT INTO students VALUES
+          (1, 'B.Sc.'), (2, 'B.Sc.'), (3, 'B.Sc.'), (4, 'B.Sc.');
+
+          INSERT INTO grades VALUES
+          (1, 1.0), (2, 1.3), (3, 2.7), (4, 3.0);
+          "
+
+      - name: Run grading view
+        run: |
+          psql -h localhost -U test -d ects_test -f sql/views/v_ects_grade_v1.sql
+
+      - name: Test output
+        run: |
+          psql -h localhost -U test -d ects_test -c "
+          SELECT COUNT(*) FROM v_ects_grade_v1;
+          "
+
+  test-mysql:
+    name: Integration Test (MySQL 8)
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: ects_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - uses: actions/checkout@v4
-      - name: Validate docs exist
+
+      - name: Install mysql client
+        run: sudo apt-get install mysql-client
+
+      - name: Load demo data
         run: |
-          set -e
-          test -f docs/assumptions.md
-          test -f docs/data_dictionary.md
-          test -f docs/methodology.md
-          test -f docs/performance_considerations.md
-          echo "Docs OK."
+          mysql -h 127.0.0.1 -uroot -proot ects_test -e "
+          CREATE TABLE students(id INT, degree VARCHAR(50));
+          CREATE TABLE grades(student_id INT, grade DECIMAL(3,1));
+
+          INSERT INTO students VALUES
+          (1, 'B.Sc.'), (2, 'B.Sc.'), (3, 'B.Sc.'), (4, 'B.Sc.');
+
+          INSERT INTO grades VALUES
+          (1, 1.0), (2, 1.3), (3, 2.7), (4, 3.0);
+          "
+      
+      - name: Run grading query
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot ects_test < sql/views/v_ects_grade_v1.sql
+
+      - name: Test output
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot ects_test -e "
+          SELECT COUNT(*) FROM v_ects_grade_v1;
+          "

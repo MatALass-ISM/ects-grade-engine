@@ -162,17 +162,6 @@ Edge cases tested:
 
 ------------------------------------------------------------------------
 
-## Portability
-
-  Database        Supported
-  --------------- -----------
-  MySQL 8+        ✅
-  PostgreSQL      ✅
-  MariaDB 10.2+   ⚠
-  BigQuery        🚧
-
-------------------------------------------------------------------------
-
 ## Versioning Strategy
 
 Views are versioned:

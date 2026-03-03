@@ -84,6 +84,22 @@ reliably.
 
 ------------------------------------------------------------------------
 
+## Legacy Production Query
+
+The file `sql/legacy/legacy_system_query.sql` contains the original production query currently used in the institutional system.
+
+It is kept for:
+- backward compatibility
+- auditability
+- migration comparison
+- performance benchmarking
+
+This query uses MySQL session variables and is not optimized for portability or scalability.
+
+The new engine (`v_ects_grade_v1.sql`) is the production-ready refactored version.
+
+------------------------------------------------------------------------
+
 ## Data Contract
 
 ### Required Tables
